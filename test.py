@@ -9,7 +9,7 @@ _, _, test_x_orig, test_y, classes = utils.load_data()
 test_x_flatten = test_x_orig.reshape(test_x_orig.shape[0], -1).T
 test_x = test_x_flatten / 255.0
 
-sample_idx = 18
+sample_idx = 6
 
 plt.imsave('sample.png', test_x_orig[sample_idx])
 sample = test_x[:, sample_idx]
@@ -18,8 +18,7 @@ print("Ground truth: ", classes[test_y[0, sample_idx]])
 
 parameters = [[test_x.shape[0], 20, 'relu'],
               [20, 7, 'relu'],
-              [7, 5, 'relu'],
-              [5, 1, 'sigmoid']]
+              [7, 1, 'sigmoid']]
 
 deep_nn = NeuralNetwork(parameters)
 deep_nn.load_checkpoint('checkpoint.npz')

@@ -21,6 +21,7 @@ class NeuralNetwork:
         self.dA = {}
         self.activation = ['non']
         self.loss_list = []
+        self.acc_list = []
 
     def _initialize_weights(self):
         for idx, (in_nodes, out_nodes, act_fn) in enumerate(self.parameters):
@@ -70,7 +71,7 @@ class NeuralNetwork:
                 self.dZ[idx] = self.dA[idx] * utils.dsoftmax(self.Z[idx])
 
             self.dW[idx] = (1 / m) * (self.dZ[idx] @ self.A[idx - 1].T)
-            self.dB[idx] = (1 / m) * np.sum(self.dZ[idx], axis=1, keepdims=True)
+            self.dB[idx] = (1 / m) * (self.dZ[idx] @ np.identity(self.dZ[idx].shape[1]).T)
             self.dA[idx - 1] = (self.W[idx].T @ self.dZ[idx])
 
     def optimizer(self, learning_rate):
@@ -82,7 +83,7 @@ class NeuralNetwork:
     def predict(self, X):
         L = len(self.parameters)
         self.forward(X)
-        return float(self.A[L])
+        return float(self.A[L][0])
     
     def evaluate(self, X, Y):
         L = len(self.parameters)
@@ -105,12 +106,13 @@ class NeuralNetwork:
             loss = self.loss_function(Y)
             self.backward(Y)
             self.optimizer(learning_rate=learning_rate)
+            accuracy = self.evaluate(X, Y)
 
             if print_cost and i % 100 == 0 or i == epochs - 1:
-                accuracy = self.evaluate(X, Y)
                 print(f"Iteration {i:4}: Loss - {loss:.7f}, Accuracy - {accuracy*100.:.4f}")
             if i % 100 == 0 or i == epochs - 1:
                 self.loss_list.append(loss)
+                self.acc_list.append(accuracy)
                 if loss < best_loss:
                     best_loss = loss
                     self.save_checkpoint('checkpoint')
@@ -119,9 +121,18 @@ class NeuralNetwork:
         checkpoint = {'W': self.W, 'B': self.B, 'activation': self.activation}
         utils.save_checkpoint(checkpoint, filename=filename)
 
-    def plot_losses(self, learning_rate):
+    def plot_losses(self):
         plt.plot(self.loss_list)
-        plt.ylabel('cost')
+        plt.ylabel('loss')
         plt.xlabel('iterations (per hundreds)')
-        plt.title("Learning rate =" + str(learning_rate))
+        plt.title("Losses")
         plt.savefig('losses.png')
+        plt.show()
+    
+    def plot_acc(self):
+        plt.plot(self.acc_list)
+        plt.ylabel('acc')
+        plt.xlabel('iterations (per hundreds)')
+        plt.title("Accuracy")
+        plt.savefig('acc.png')
+        plt.show()
