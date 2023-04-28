@@ -5,16 +5,13 @@ import h5py
 def relu(z):
     return np.maximum(0., z)
 
-
 def drelu(z):
     z[z <= 0] = 0
     z[z > 0] = 1
     return z
 
-
 def sigmoid(z):
     return 1. / (1. + np.exp(-z))
-
 
 def dsigmoid(z):
     return sigmoid(z) * (1.0 - sigmoid(z))
@@ -24,7 +21,6 @@ def softmax(z):
     e_Z = np.exp(z)
     A = e_Z / e_Z.sum(axis=0)
     return A
-
 
 def dsoftmax(z, eps=1e-3):
     return (softmax(z + eps) - softmax(z - eps)) / (2 * eps)
@@ -45,7 +41,3 @@ def load_data():
     test_set_y_orig = test_set_y_orig.reshape((1, test_set_y_orig.shape[0]))
 
     return train_set_x_orig, train_set_y_orig, test_set_x_orig, test_set_y_orig, classes
-
-
-def save_checkpoint(parameters, filename):
-    np.savez(filename, **parameters)

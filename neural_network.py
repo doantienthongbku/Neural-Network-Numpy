@@ -3,14 +3,14 @@ import utils
 import matplotlib.pyplot as plt
 
 # input_nodes, output_nodes, activation
-# parameters = [[10 * 10, 10, 'relu'],
+# layers = [[10 * 10, 10, 'relu'],
 #               [10, 20, 'relu'],
 #               [20, 2, 'softmax']]
 
 
 class NeuralNetwork:
-    def __init__(self, parameters):
-        self.parameters = parameters
+    def __init__(self, layers):
+        self.layers = layers
         self.W = {}
         self.B = {}
         self.Z = {}
@@ -22,9 +22,11 @@ class NeuralNetwork:
         self.activation = ['non']
         self.loss_list = []
         self.acc_list = []
+        
+        self._initialize_weights()
 
     def _initialize_weights(self):
-        for idx, (in_nodes, out_nodes, act_fn) in enumerate(self.parameters):
+        for idx, (in_nodes, out_nodes, act_fn) in enumerate(self.layers):
             self.W[idx + 1] = np.random.randn(out_nodes, in_nodes) * np.sqrt(2 / in_nodes)
             self.B[idx + 1] = np.zeros(shape=(out_nodes, 1))
             self.activation.append(act_fn)
@@ -40,7 +42,7 @@ class NeuralNetwork:
 
     def forward(self, X):
         self.A[0] = X
-        L = len(self.parameters)
+        L = len(self.layers)
         for idx in range(1, L + 1):
             self.Z[idx] = self.W[idx] @ self.A[idx - 1] + self.B[idx]
 
@@ -53,13 +55,13 @@ class NeuralNetwork:
 
     def loss_function(self, Y):
         m = Y.shape[1]
-        L = len(self.parameters)
+        L = len(self.layers)
         loss = - (1 / m) * np.sum(Y * np.log(self.A[L]) + (1 - Y) * np.log(1 - self.A[L]))
         return loss
 
     def backward(self, Y):
         m = Y.shape[1]
-        L = len(self.parameters)
+        L = len(self.layers)
         self.dA[L] = - (np.divide(Y, self.A[L]) - np.divide(1 - Y, 1 - self.A[L]))
         for idx in reversed(range(1, L + 1)):
 
@@ -71,22 +73,22 @@ class NeuralNetwork:
                 self.dZ[idx] = self.dA[idx] * utils.dsoftmax(self.Z[idx])
 
             self.dW[idx] = (1 / m) * (self.dZ[idx] @ self.A[idx - 1].T)
-            self.dB[idx] = (1 / m) * (self.dZ[idx] @ np.identity(self.dZ[idx].shape[1]).T)
+            self.dB[idx] = (1 / m) * self.dZ[idx].sum(axis=1, keepdims=True)
             self.dA[idx - 1] = (self.W[idx].T @ self.dZ[idx])
 
     def optimizer(self, learning_rate):
-        L = len(self.parameters)
+        L = len(self.layers)
         for idx in range(1, L + 1):
             self.W[idx] = self.W[idx] - learning_rate * self.dW[idx]
             self.B[idx] = self.B[idx] - learning_rate * self.dB[idx]
 
     def predict(self, X):
-        L = len(self.parameters)
+        L = len(self.layers)
         self.forward(X)
         return float(self.A[L][0])
     
     def evaluate(self, X, Y):
-        L = len(self.parameters)
+        L = len(self.layers)
         m = Y.shape[1]
         self.forward(X)
         predictions = np.zeros((1, m))
@@ -99,7 +101,6 @@ class NeuralNetwork:
         return accuracy
 
     def fit(self, X, Y, epochs, learning_rate, print_cost=False):
-        self._initialize_weights()
         best_loss = np.inf
         for i in range(epochs):
             self.forward(X)
@@ -119,20 +120,14 @@ class NeuralNetwork:
                 
     def save_checkpoint(self, filename):
         checkpoint = {'W': self.W, 'B': self.B, 'activation': self.activation}
-        utils.save_checkpoint(checkpoint, filename=filename)
+        np.savez(filename, **checkpoint)
 
-    def plot_losses(self):
+    def plot_figs(self):
         plt.plot(self.loss_list)
-        plt.ylabel('loss')
-        plt.xlabel('iterations (per hundreds)')
-        plt.title("Losses")
-        plt.savefig('losses.png')
-        plt.show()
-    
-    def plot_acc(self):
         plt.plot(self.acc_list)
-        plt.ylabel('acc')
+        plt.ylabel('loss - accuracy')
         plt.xlabel('iterations (per hundreds)')
-        plt.title("Accuracy")
-        plt.savefig('acc.png')
-        plt.show()
+        plt.title("Losses - Accuracy")
+        
+        plt.savefig('figure.png')
+    
